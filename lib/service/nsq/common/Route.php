@@ -6,7 +6,7 @@
  * Time: 下午10:48
  * author :李华 yehong0000@163.com
  */
-namespace lib\framwork;
+namespace lib\framework\common;
 class Route
 {
 
