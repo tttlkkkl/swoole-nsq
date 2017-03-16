@@ -184,6 +184,7 @@ class Config {
     public function getConfigs() {
         return (object)$this->getConfig();
     }
+
     /**
      * 获取指定配置，支持点语法
      *
