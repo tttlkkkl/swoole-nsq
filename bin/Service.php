@@ -8,5 +8,5 @@
  * author :李华 yehong0000@163.com
  */
 require('../lib/framework/Boortstrap.php');
-use lib\service\Service;
-$s=new Service();
+use lib\service\nsq\common\Server;
+$s=new Server();

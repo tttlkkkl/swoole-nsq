@@ -9,11 +9,12 @@
 namespace lib\service\nsq\common;
 
 
-use lib\service\Service;
+use lib\service\nsq\Main;
 
-class Server extends Service
+class Server extends Main
 {
     public function __construct()
     {
+        parent::__construct();
     }
 }
