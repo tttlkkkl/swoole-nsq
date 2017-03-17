@@ -7,6 +7,6 @@
  * Time: 上午12:23
  * author :李华 yehong0000@163.com
  */
-require('../lib/framework/Boortstrap.php');
+require('../lib/framework/Bootstrap.php');
 use lib\service\nsq\common\Server;
 $s=new Server();

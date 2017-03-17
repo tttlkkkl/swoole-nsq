@@ -13,9 +13,9 @@ use lib\framework\main\Config;
  */
 class Service {
     public function __construct() {
-        $config = Config::getInstance()->getConfigs();
-        //print_r($config);
-        print_r(Config::getInstance()->get('application.dispatcher'));
+//        $config = Config::getInstance()->getConfigs();
+//        print_r($config);
+//        print_r(Config::getInstance()->get('application.dispatcher'));
     }
 
 }
