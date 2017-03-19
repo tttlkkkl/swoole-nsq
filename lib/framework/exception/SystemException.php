@@ -7,7 +7,7 @@ namespace lib\framework\exception;
  * Time: 下午11:25
  * author :李华 yehong0000@163.com
  */
-class systemException extends \Exception
+class SystemException extends \Exception
 {
 
 }

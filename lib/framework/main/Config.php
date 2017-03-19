@@ -1,7 +1,7 @@
 <?php
 namespace lib\framework\main;
 
-use lib\framework\exception\systemException;
+use lib\framework\exception\SystemException;
 
 /**
  *系统配置缓处理类
@@ -20,6 +20,8 @@ class Config {
 
     //环境设置
     private $environs;
+    //基础前缀键，设置之后点语法取配置可省略相应部分
+    private $baseKey;
     protected static $objArr;
 
     private function __construct($fileName) {
@@ -193,6 +195,9 @@ class Config {
      */
     public function get($field) {
         if ($field && is_string($field)) {
+            if(isset($this->baseKey) && is_string($this->baseKey)){
+                $field=$this->baseKey.'.'.$field;
+            }
             $this->getConfig();
             if (isset($this->config[$field])) {
                 return $this->config[$field];
@@ -205,5 +210,13 @@ class Config {
             }
         }
         return null;
+    }
+
+    /**
+     * 设置基础前缀键
+     * @param $key
+     */
+    public function setBaseKey($key){
+        $this->baseKey=$key;
     }
 }
