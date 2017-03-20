@@ -1,32 +1,19 @@
 <?php
-namespace lib\service\nsq;
-
-use lib\framework\main\Config;
-use lib\service\ServerInterface;
-use lib\service\Service;
-use Swoole\Server;
-
-use lib\framework\nsq\Nsq;
-use lib\framework\nsq\Lookup\Nsqlookupd;
-
 /**
- * Class Main
- * 类功能
+ *webSocket额外接口
  *
- * @datetime: 2017/3/16 14:36
+ * @datetime: 2017/3/20 18:52
  * @author: lihs
  * @copyright: ec
  */
-class Main extends Service implements ServerInterface {
+namespace lib\service;
 
-    public function __construct() {
-        parent::serverInit($this->serverName, $this);
-    }
+use Swoole\WebSocket\Server;
+use Swoole\WebSocket\Frame;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
 
-    public function subscribe() {
-        $lookUpd = new Nsqlookupd($this->config->get('host') ?: '127.0.0.1:4151');
-        $nsq=new Nsq($lookUpd);
-    }
+interface WebSocketInterface {
 
     /**
      * 定时器回调
@@ -36,8 +23,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onTimer(Server $server, $interval) {
-    }
+    public function onTimer(Server $server, $interval);
 
     /**
      * 连接进入回调 发生在woker进程
@@ -48,8 +34,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onConnect(Server $server, $fd, $from_id) {
-    }
+    public function onConnect(Server $server, $fd, $from_id);
 
     /**
      * 收到数据时触发 发生在woker中
@@ -61,8 +46,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onReceive(Server $server, $fd, $from_id, $data) {
-    }
+    public function onReceive(Server $server, $fd, $from_id, $data);
 
     /**
      *接收到UDP数据包时回调此函数，发生在worker进程中
@@ -73,8 +57,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onPacket(Server $server, $data, array $client_info) {
-    }
+    public function onPacket(Server $server, $data, array $client_info);
 
     /**
      * TCP客户端连接关闭后，在worker进程中回调此函数
@@ -85,8 +68,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onClose(Server $server, $fd, $reactorId) {
-    }
+    public function onClose(Server $server, $fd, $reactorId);
 
     /**
      * task 回调
@@ -98,8 +80,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onTask(Server $server, $task_id, $src_worker_id, $data) {
-    }
+    public function onTask(Server $server, $task_id, $src_worker_id, $data);
 
     /**
      * task 结束时调用可以向worker发送数据
@@ -110,8 +91,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onFinish(Server $server, $task_id, $data) {
-    }
+    public function onFinish(Server $server, $task_id, $data);
 
     /**
      * 当工作进程收到由sendMessage发送的管道消息时会触发onPipeMessage事件。worker/task进程都可能会触发onPipeMessage事件
@@ -122,6 +102,28 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onPipeMessage(Server $server, $from_worker_id, $message) {
-    }
+    public function onPipeMessage(Server $server, $from_worker_id, $message);
+
+    /**
+     * 连当WebSocket客户端与服务器建立连接并完成握手后会回调此函数
+     * @param Server $server
+     * @param $request
+     * @return mixed
+     */
+    public function onOpen(Server $server, Request$request);
+
+    /**
+     * @param Request $request
+     * @param Response $response
+     * @return mixed
+     */
+    //public function onHandshake(Request $request, Response $response);
+
+    /**
+     * 当服务器收到来自客户端的数据帧时会回调此函数
+     * @param Server $server
+     * @param Frame $frame
+     * @return mixed
+     */
+    public function onMessage(Server $server, Frame $frame);
 }
