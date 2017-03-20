@@ -96,16 +96,10 @@ class Service {
      *
      * @throws ServiceException
      */
-    protected function setConfig($serverName) {
-        $this->config = Config::getInstance($serverName);
+    private function setConfig($serverName) {
+        $this->config = Config::getInstance('swoole');
         $this->config->setBaseKey($serverName);
         $this->logPath = $this->config->get('logPath');
-        if (!is_dir($this) || !is_writable($this->logPath)) {
-            throw  new ServiceException('日志路径错误或不可写', 1040);
-        } else {
-            //设置日志目录
-            Log::setBasePath($this->logPath);
-        }
     }
 
     /**
@@ -149,7 +143,7 @@ class Service {
      * @param Server $server
      */
     private function onStart(Server $server) {
-        Log::info($this->serverName . ': 服务启动...', [], $this->serverName);
+        Log::info($this->serverName . ': 服务启动...', [], $this->logPath);
         //记录主进程pid
         Log::info('master_pid:{master_pid},manager_pid:{manager_pid}', [
             '{master_pid}'  => $server->master_pid,
@@ -163,7 +157,7 @@ class Service {
      * @param Server $server
      */
     private function onShutdown(Server $server) {
-        Log::info($this->serverName . ': 服务退出...', [], $this->serverName);
+        Log::info($this->serverName . ': 服务退出...', [], $this->logPath);
     }
 
     /**
@@ -172,7 +166,7 @@ class Service {
      * @param $worker_id
      */
     private function onManagerStart(Server $server, $worker_id) {
-        Log::info($this->serverName . ': manager 启动...', [], $this->serverName);
+        Log::info($this->serverName . ': manager 启动...', [], $this->logPath);
     }
 
     /**
@@ -181,7 +175,7 @@ class Service {
      * @param $worker_id
      */
     private function onManagerStop(Server $server, $worker_id) {
-        Log::info($this->serverName . ': manager 退出...', [], $this->serverName);
+        Log::info($this->serverName . ': manager 退出...', [], $this->logPath);
     }
 
     /**
@@ -193,10 +187,10 @@ class Service {
     private function onWorkerStart(Server $server, $serverCallback) {
         $server->on('onWorkerStart', function (Server $server, $worker_id) use ($serverCallback) {
             if ($worker_id >= $server->setting['worker_num']) {
-                Log::info($this->serverName . ': task_worker 启动...', [], $this->serverName);
+                Log::info($this->serverName . ': task_worker 启动...', [], $this->logPath);
                 $this->cliSetProcessTitle($this->serverName . '_task_worker');
             } else {
-                Log::info($this->serverName . ': event_worker 启动...', [], $this->serverName);
+                Log::info($this->serverName . ': event_worker 启动...', [], $this->logPath);
                 $this->cliSetProcessTitle($this->serverName . 'event_worker');
             }
             if (method_exists($serverCallback, 'onWorkerStart')) {
@@ -213,9 +207,9 @@ class Service {
      */
     private function onWorkerStop(Server $server, $worker_id) {
         if ($worker_id >= $server->setting['worker_num']) {
-            Log::info($this->serverName . ': task_worker 退出...', [], $this->serverName);
+            Log::info($this->serverName . ': task_worker 退出...', [], $this->logPath);
         } else {
-            Log::info($this->serverName . ': event_worker 退出...', [], $this->serverName);
+            Log::info($this->serverName . ': event_worker 退出...', [], $this->logPath);
         }
     }
 
@@ -235,7 +229,7 @@ class Service {
                 '{exit_code}'  => $exit_code,
                 '{signal}'     => $signal
             ],
-            $this->serverName);
+            $this->logPath);
     }
 
     /**

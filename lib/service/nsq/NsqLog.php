@@ -4,8 +4,8 @@
  * Class NsqLog
  * 重写nsq客户端类日志
  *
- * @datetime: 2017/3/20 21:53
- * @author: lihs
+ * @datetime : 2017/3/20 21:53
+ * @author   : lihs
  * @copyright: ec
  */
 
@@ -13,14 +13,15 @@ namespace lib\service\nsq;
 
 
 use lib\framework\nsq\Logger\LoggerInterface;
+use lib\framework\log\Log;
 
-class NsqLog implements LoggerInterface {
+class NsqLog implements LoggerInterface
+{
     protected $logPath;
-    protected $serverName;
 
-    public function __construct($logPath, $serverName) {
-        $this->logPath = $serverName;
-        $this->serverName = $serverName;
+    public function __construct($logPath)
+    {
+        $this->logPath = $logPath;
     }
 
     /**
@@ -28,7 +29,9 @@ class NsqLog implements LoggerInterface {
      *
      * @param string|\Exception $msg
      */
-    public function error($msg) {
+    public function error($msg)
+    {
+        return Log::error($msg, [], $this->logPath);
     }
 
     /**
@@ -36,7 +39,9 @@ class NsqLog implements LoggerInterface {
      *
      * @param string|\Exception $msg
      */
-    public function warn($msg) {
+    public function warn($msg)
+    {
+        return Log::warning($msg, [], $this->logPath);
     }
 
     /**
@@ -44,7 +49,9 @@ class NsqLog implements LoggerInterface {
      *
      * @param string|\Exception $msg
      */
-    public function info($msg) {
+    public function info($msg)
+    {
+        return Log::info($msg, [], $this->logPath);
     }
 
     /**
@@ -52,6 +59,8 @@ class NsqLog implements LoggerInterface {
      *
      * @param string|\Exception $msg
      */
-    public function debug($msg) {
+    public function debug($msg)
+    {
+        return Log::debug($msg, [], $this->logPath);
     }
 }

@@ -2,6 +2,8 @@
 namespace lib\service\nsq;
 
 use lib\framework\main\Config;
+use lib\framework\nsq\Dedupe\OppositeOfBloomFilter;
+use lib\framework\nsq\RequeueStrategy\DelaysList;
 use lib\service\ServerInterface;
 use lib\service\Service;
 use Swoole\Server;
@@ -19,15 +21,29 @@ use lib\framework\nsq\Lookup\Nsqlookupd;
  */
 class Main extends Service implements ServerInterface {
 
-    public function __construct() {
-        parent::serverInit($this->serverName, $this);
+    protected $NsqConfig;
+    protected $logPath;
+    public function __construct($serverName) {
+        parent::serverInit($serverName, $this);
+        $this->setConfig($serverName);
     }
 
     public function subscribe() {
-        $lookUpd = new Nsqlookupd($this->config->get('host') ?: '127.0.0.1:4151');
+        $lookUpd = new Nsqlookupd($this->NsqConfig->get('host') ?: '127.0.0.1:4151');
         $nsq=new Nsq($lookUpd);
+        $nsqLog=new NsqLog($this->logPath);
+        //消息去重规则
+        $dedupe=new OppositeOfBloomFilter();
     }
 
+    /**
+     * @param $serverName
+     */
+    private function setConfig($serverName){
+        $this->NsqConfig=Config::getInstance('nsq');
+        $this->NsqConfig->setBaseKey($serverName);
+        $this->logPath=$this->NsqConfig->get('logPath')?:$serverName;
+    }
     /**
      * 定时器回调
      *
