@@ -33,7 +33,7 @@ class Main extends Service implements ServerInterface {
         $nsq=new Nsq($lookUpd);
         $nsqLog=new NsqLog($this->logPath);
         //消息去重规则
-        $dedupe=new OppositeOfBloomFilter();
+        $deDupe=new OppositeOfBloomFilter();
     }
 
     /**

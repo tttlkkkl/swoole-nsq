@@ -28,8 +28,8 @@ class DelaysList implements RequeueStrategyInterface
     /**
      * Constructor
      *
-     * @param integer $maxAttempts
-     * @param array $delays
+     * @param integer $maxAttempts 尝试次数
+     * @param array $delays 延迟时间
      */
     public function __construct($maxAttempts = 10, array $delays = array('50'))
     {

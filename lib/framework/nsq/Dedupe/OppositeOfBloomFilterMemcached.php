@@ -124,7 +124,7 @@ class OppositeOfBloomFilterMemcached implements DedupeInterface
         $index = $val % $this->size;
         $content = md5($element);
 
-        $mcKey = "lib\framework\nsq:{$this->size}:{$index}";
+        $mcKey = "nsq:message:{$this->size}:{$index}";
         $storedContentHash = $this->memcached->get($mcKey);
         $seen = $storedContentHash && $storedContentHash === $content;
 

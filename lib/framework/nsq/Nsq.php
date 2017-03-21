@@ -412,16 +412,18 @@ class Nsq
             $connection->write($this->writer->nop());
         } elseif ($this->reader->frameIsMessage($frame)) {
             $msg = Message::fromFrame($frame);
-            
+
+            //如果有重复消息，直接打日志不进入正常业务处理
             if ($this->dedupe !== NULL && $this->dedupe->containsAndAdd($topic, $channel, $msg)) {
                 if ($this->logger) {
                     $this->logger->debug(sprintf('Deduplicating [%s] "%s"', (string)$connection, $msg->getId()));
                 }
             } else {
+                //没有重复消息进入正常业务
                 try {
                     call_user_func($callback, $msg);
                 } catch (\Exception $e) {
-                    // 重复数据删除
+                    //擦除重复数据标记
                     if ($this->dedupe !== NULL) {
                         $this->dedupe->erase($topic, $channel, $msg);
                     }
@@ -429,7 +431,7 @@ class Nsq
                     if ($this->logger) {
                         $this->logger->warn(sprintf('Error processing [%s] "%s": %s', (string)$connection, $msg->getId(), $e->getMessage()));
                     }
-                    // 重新排队策略
+                    //重新排队策略
                     if ($this->requeueStrategy !== NULL
                             && ($delay = $this->requeueStrategy->shouldRequeue($msg)) !== NULL) {
                         // requeue
