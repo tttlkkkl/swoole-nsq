@@ -16,16 +16,6 @@ use Swoole\Http\Response;
 interface WebSocketInterface {
 
     /**
-     * 定时器回调
-     *
-     * @param Server $server
-     * @param int $interval
-     *
-     * @return mixed
-     */
-    public function onTimer(Server $server, $interval);
-
-    /**
      * 连接进入回调 发生在woker进程
      *
      * @param Server $server

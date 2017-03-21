@@ -1,9 +1,9 @@
 <?php
 namespace lib\service\nsq;
 
+use lib\framework\exception\ServiceException;
 use lib\framework\main\Config;
-use lib\framework\nsq\Dedupe\OppositeOfBloomFilter;
-use lib\framework\nsq\RequeueStrategy\DelaysList;
+use lib\framework\nsq\RequeueStrategy\FixedDelay;
 use lib\service\ServerInterface;
 use lib\service\Service;
 use Swoole\Server;
@@ -23,36 +23,38 @@ class Main extends Service implements ServerInterface {
 
     protected $NsqConfig;
     protected $logPath;
+
     public function __construct($serverName) {
         parent::serverInit($serverName, $this);
         $this->setConfig($serverName);
     }
 
     public function subscribe() {
-        $lookUpd = new Nsqlookupd($this->NsqConfig->get('host') ?: '127.0.0.1:4151');
-        $nsq=new Nsq($lookUpd);
-        $nsqLog=new NsqLog($this->logPath);
+        $lookUpd = new Nsqlookupd($this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4151'));
+        $nsqLog = new NsqLog($this->logPath);
         //消息去重规则
-        $deDupe=new OppositeOfBloomFilter();
+        $deDupe = new Dedupe();
+        // 排队策略，重试10次，延时50秒
+        $reQueueStrategy = new FixedDelay(10, 50);
+        $nsq = new Nsq($lookUpd, $deDupe, $reQueueStrategy, $nsqLog);
+        $topicChannel = array_unique(explode(',', $this->NsqConfig->get('topicChannel')));
+        if ($topicChannel && is_array($topicChannel)) {
+            foreach ($topicChannel as $val) {
+
+                $nsq->subscribe();
+            }
+        } else {
+            throw new ServiceException($this->serverName . ':未订阅任何话题,退出', 8013);
+        }
     }
 
     /**
      * @param $serverName
      */
-    private function setConfig($serverName){
-        $this->NsqConfig=Config::getInstance('nsq');
+    private function setConfig($serverName) {
+        $this->NsqConfig = Config::getInstance('nsq');
         $this->NsqConfig->setBaseKey($serverName);
-        $this->logPath=$this->NsqConfig->get('logPath')?:$serverName;
-    }
-    /**
-     * 定时器回调
-     *
-     * @param Server $server
-     * @param int $interval
-     *
-     * @return mixed
-     */
-    public function onTimer(Server $server, $interval) {
+        $this->logPath = $this->NsqConfig->get('logPath') ?: $serverName;
     }
 
     /**

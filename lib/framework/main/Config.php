@@ -4,7 +4,7 @@ namespace lib\framework\main;
 use lib\framework\exception\SystemException;
 
 /**
- *系统配置缓处理类
+ *系统配置缓处理类 配置文件中的常亮将直接被解析 无需使用 constant()取值
  *
  * Date: 17-3-15
  * Time: 下午11:10
@@ -72,7 +72,7 @@ class Config {
                         $mereKeys = explode(':', $v);
                         $k = trim(reset($mereKeys));
                         krsort($mereKeys);
-                        $config[$k] = [];
+                        $config[$k] = $this->config[$v];
                         foreach ($mereKeys as $sK) {
                             $sK = trim($sK);
                             $config[$k] = array_merge($config[$k], isset($this->config[$sK]) && is_array($this->config[$sK]) ? $this->config[$sK] : []);
@@ -85,7 +85,7 @@ class Config {
                 }
             }
             $environ = $this->getEnviron('ENVIRON');
-            if ($environ && is_string($environ) && is_array($config[$environ])) {
+            if ($environ && is_string($environ) && isset($config[$environ]) && is_array($config[$environ])) {
                 $commonConfig = array_merge($commonConfig, $config[$environ]);
             }
             $this->config = $commonConfig;
@@ -191,12 +191,13 @@ class Config {
      * 获取指定配置，支持点语法
      *
      * @param $field
+     * @param bool $fullPath 忽略baseKey全路径查询
      * @return array|null
      */
-    public function get($field) {
+    public function get($field, $fullPath = false) {
         if ($field && is_string($field)) {
-            if(isset($this->baseKey) && is_string($this->baseKey)){
-                $field=$this->baseKey.'.'.$field;
+            if ($fullPath !== true && isset($this->baseKey) && is_string($this->baseKey)) {
+                $field = $this->baseKey . '.' . $field;
             }
             $this->getConfig();
             if (isset($this->config[$field])) {
@@ -216,7 +217,7 @@ class Config {
      * 设置基础前缀键
      * @param $key
      */
-    public function setBaseKey($key){
-        $this->baseKey=$key;
+    public function setBaseKey($key) {
+        $this->baseKey = $key;
     }
 }

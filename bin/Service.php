@@ -10,3 +10,4 @@
 require('../lib/framework/Bootstrap.php');
 use lib\service\nsq\common\Server;
 $s=new Server();
+$s->start();

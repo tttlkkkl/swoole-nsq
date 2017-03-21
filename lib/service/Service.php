@@ -8,6 +8,8 @@ use lib\service\HttpInterface;
 use lib\service\ServerInterface;
 use lib\service\WebSocketInterface;
 use Swoole\Server;
+use Swoole\WebSocket\Server as WebSocketServer;
+use Swoole\Http\Server as HttpServer;
 
 /**
  * Class service
@@ -18,14 +20,17 @@ use Swoole\Server;
  * @copyright: ec
  */
 class Service {
-    protected $logPath;
     protected $serverName;
     public $server;
     public $config;
-
+    private $logPath;
+    private $daemonize;
 
     public function __construct() {
-
+        if (!extension_loaded('swoole')) {
+            exit(-1);
+        }
+        if (!extension_loaded('SeasLog')) ;
     }
 
 
@@ -40,17 +45,16 @@ class Service {
     public function serverInit($serverName, ServerInterface $serverCallback) {
         $this->setConfig($serverName);
         $this->serverName = $serverName;
-        $this->server = new \swoole_server(
+        $this->server = new Server(
             $this->config->get('server.ip') ?: '0.0.0.0',
             $this->config->get('server.port') ?: 9501,
-            $this->config->get('server.model') ? \constant($this->config->get('server.model')) : SWOOLE_BASE,
-            $this->config->get('server.socket' ? \constant($this->config->get('server.model')) : SWOOLE_SOCK_TCP)
+            $this->config->get('server.model') !== null ? $this->config->get('server.model') : SWOOLE_BASE,
+            $this->config->get('server.socket') !== null ? $this->config->get('server.socket') : SWOOLE_SOCK_TCP
         );
-        if (is_array($this->config->get('set'))) {
-            $this->server->set($this->config->get('set'));
-        }
+        $this->serverSet();
         $this->setCallback(1, $this->server, $serverCallback);
     }
+
 
     /**
      * webSocket 服务启动处理
@@ -62,13 +66,11 @@ class Service {
      */
     public function webSocketInit($serverName, WebSocketInterface $serverCallback) {
         $this->setConfig($serverName);
-        $this->server = new \swoole_server(
+        $this->server = new WebSocketServer(
             $this->config->get('server.ip') ?: '0.0.0.0',
             $this->config->get('server.port') ?: 9501
         );
-        if (is_array($this->config->get('set'))) {
-            $this->server->set($this->config->get('set'));
-        }
+        $this->serverSet();
         $this->setCallback(2, $this->server, $serverCallback);
     }
 
@@ -79,14 +81,43 @@ class Service {
      */
     public function httpInit($serverName, HttpInterface $serverCallback) {
         $this->setConfig($serverName);
-        $this->server = new \swoole_server(
+        $this->server = new HttpServer(
             $this->config->get('server.ip') ?: '0.0.0.0',
             $this->config->get('server.port') ?: 9501
         );
-        if (is_array($this->config->get('set'))) {
-            $this->server->set($this->config->get('set'));
-        }
+        $this->serverSet();
         $this->setCallback(3, $this->server, $serverCallback);
+    }
+
+    /**
+     * 设置swoole运行参数
+     *
+     * @throws ServiceException
+     */
+    private function serverSet() {
+        $serverSet = $this->config->get('set');
+        if (is_array($serverSet)) {
+            if (isset($serverSet['log_file'])) {
+                $serverSet['log_file'] = LOG_PATH . $serverSet['log_file'];
+                if (!file_exists($serverSet['log_file'])) {
+                    $dir = substr($serverSet['log_file'], 0, strrpos($serverSet['log_file'], '/'));
+                    if (!is_dir($dir)) {
+                        if (!mkdir($dir, 0765, true)) {
+                            throw new ServiceException('创建swoole日志目录失败', 8039);
+                        }
+                    }
+                    if (!touch($serverSet['log_file'])) {
+                        throw new ServiceException('创建swoole日志文件失败', 8040);
+                    }
+                } elseif (!is_writeable($serverSet['log_file'])) {
+                    throw new ServiceException('swoole日志文件不可写', 8041);
+                }
+            }
+            if (isset($serverSet['daemonize'])) {
+                $this->daemonize = $serverSet['daemonize'];
+            }
+            $this->server->set($serverSet);
+        }
     }
 
     /**
@@ -107,48 +138,51 @@ class Service {
      *
      * @param $type
      * @param Server $server
-     * @param ServiceInterface $serverCallback
+     * @param $serverCallback
      */
-    private function setCallback($type, Server $server, ServiceInterface $serverCallback) {
-        $server->on('onStart', [$this, 'onStart']);
-        $server->on('onShutdown', [$this, 'onShutdown']);
-        $server->on('onWorkerError', [$this, 'onWorkerError']);
-        $server->on('onManagerStart', [$this, 'onManagerStart']);
-        $server->on('onManagerStop', [$this, 'onManagerStop']);
-        call_user_func([$this, 'onWorkerStart'], $server, $serverCallback);
-        $server->on('onWorkerStop', [$serverCallback, 'onWorkerStop']);
-        $server->on('onTimer', [$serverCallback, 'onTimer']);
-        $server->on('onClose', [$serverCallback, 'onClose']);
-        $server->on('onTask', [$serverCallback, 'onTask']);
-        $server->on('onFinish', [$serverCallback, 'onFinish']);
-        $server->on('onPipeMessage', [$serverCallback, 'onPipeMessage']);
+    private function setCallback($type, $server, $serverCallback) {
+        $server->on('start', [$this, 'onStart']);
+        $server->on('shutdown', [$this, 'onShutdown']);
+        $server->on('workerError', [$this, 'onWorkerError']);
+        $server->on('managerStart', [$this, 'onManagerStart']);
+        $server->on('managerStop', [$this, 'onManagerStop']);
+        $server->on('workerStart', [$this, 'onWorkerStart']);
+        $server->on('workerStop', [$serverCallback, 'onWorkerStop']);
+        $server->on('close', [$serverCallback, 'onClose']);
+        $server->on('task', [$serverCallback, 'onTask']);
+        $server->on('finish', [$serverCallback, 'onFinish']);
+        $server->on('pipeMessage', [$serverCallback, 'onPipeMessage']);
         //webSocket和server额外回调
         if ($type === 1 || $type === 3) {
-            $server->on('onConnect', [$serverCallback, 'onConnect']);
-            $server->on('onReceive', [$serverCallback, 'onReceive']);
+            $server->on('connect', [$serverCallback, 'onConnect']);
+            $server->on('receive', [$serverCallback, 'onReceive']);
         }
         //webSocket 额外回调
         if ($type === 2) {
-            $server->on('onOpen', [$serverCallback, 'onOpen']);
-            $server->on('onMessage', [$serverCallback, 'onMessage']);
+            $server->on('open', [$serverCallback, 'onOpen']);
+            $server->on('message', [$serverCallback, 'onMessage']);
         }
         //http 额外回调
         if ($type === 3) {
-            $server->on('onRequest', [$serverCallback, 'onRequest']);
+            $server->on('request', [$serverCallback, 'onRequest']);
         }
+        $server->start();
     }
 
     /**
      * 主进程启动回调，上不允许在子类中重写
      * @param Server $server
      */
-    private function onStart(Server $server) {
+    public final function onStart(Server $server) {
         Log::info($this->serverName . ': 服务启动...', [], $this->logPath);
+        if ($this->daemonize !== true) {
+            echo $this->serverName . ': 服务启动...', "\n";
+        }
         //记录主进程pid
-        Log::info('master_pid:{master_pid},manager_pid:{manager_pid}', [
-            '{master_pid}'  => $server->master_pid,
-            '{manager_pid}' => $server->manager_pid
-        ], $this->serverName . '.pid');
+        \file_put_contents(PID_PATH . $this->serverName . '.pid', [
+            'master_pid'  => $server->master_pid,
+            'manager_pid' => $server->manager_pid
+        ]);
         $this->cliSetProcessTitle('Master');
     }
 
@@ -156,7 +190,7 @@ class Service {
      * 主进程结束回调，不允许子类中重写
      * @param Server $server
      */
-    private function onShutdown(Server $server) {
+    public final function onShutdown(Server $server) {
         Log::info($this->serverName . ': 服务退出...', [], $this->logPath);
     }
 
@@ -165,8 +199,9 @@ class Service {
      * @param Server $server
      * @param $worker_id
      */
-    private function onManagerStart(Server $server, $worker_id) {
+    public final function onManagerStart(Server $server, $worker_id) {
         Log::info($this->serverName . ': manager 启动...', [], $this->logPath);
+        $this->cliSetProcessTitle('manager');
     }
 
     /**
@@ -174,7 +209,7 @@ class Service {
      * @param Server $server
      * @param $worker_id
      */
-    private function onManagerStop(Server $server, $worker_id) {
+    public final function onManagerStop(Server $server, $worker_id) {
         Log::info($this->serverName . ': manager 退出...', [], $this->logPath);
     }
 
@@ -184,19 +219,20 @@ class Service {
      * @param Server $server
      * @param $worker_id
      */
-    private function onWorkerStart(Server $server, $serverCallback) {
-        $server->on('onWorkerStart', function (Server $server, $worker_id) use ($serverCallback) {
-            if ($worker_id >= $server->setting['worker_num']) {
-                Log::info($this->serverName . ': task_worker 启动...', [], $this->logPath);
-                $this->cliSetProcessTitle($this->serverName . '_task_worker');
-            } else {
-                Log::info($this->serverName . ': event_worker 启动...', [], $this->logPath);
-                $this->cliSetProcessTitle($this->serverName . 'event_worker');
-            }
-            if (method_exists($serverCallback, 'onWorkerStart')) {
-                call_user_func([$serverCallback, 'onWorkerStart'], $server, $worker_id);
-            }
-        });
+    public final function onWorkerStart(Server $server, $worker_id) {
+        if ($worker_id >= $server->setting['worker_num']) {
+            $msg = $this->serverName . ': task_worker  启动...';
+            $this->cliSetProcessTitle('task_worker');
+        } else {
+            $msg = $this->serverName . ': event_worker 启动...';
+            $this->cliSetProcessTitle('event_worker');
+
+        }
+        Log::info($msg, [], $this->logPath);
+        if ($this->daemonize !== true) {
+            echo $msg, "\n";
+        }
+
     }
 
     /**
@@ -205,7 +241,7 @@ class Service {
      * @param Server $server
      * @param $worker_id
      */
-    private function onWorkerStop(Server $server, $worker_id) {
+    public final function onWorkerStop(Server $server, $worker_id) {
         if ($worker_id >= $server->setting['worker_num']) {
             Log::info($this->serverName . ': task_worker 退出...', [], $this->logPath);
         } else {
@@ -221,7 +257,7 @@ class Service {
      * @param $exit_code
      * @param $signal
      */
-    private function onWorkerError(Server $server, $worker_id, $worker_pid, $exit_code, $signal) {
+    public final function onWorkerError(Server $server, $worker_id, $worker_pid, $exit_code, $signal) {
         Log::emergency($this->serverName . ':worker进程异常退出,worker_id:{worker_id},worker_pid:{worker_pid},exit_code:{exit_code},signal:{signal}',
             [
                 '{worker_id}'  => $worker_id,
@@ -236,8 +272,8 @@ class Service {
      * 设置进程名
      * @param string $title
      */
-    private function cliSetProcessTitle($title) {
-        $title = $this->serverName . '_' . $title;
+    public final function cliSetProcessTitle($title) {
+        $title = 'php_' . $this->serverName . '_' . $title;
         if (function_exists('cli_set_process_title')) {
             cli_set_process_title($title);
         } else {

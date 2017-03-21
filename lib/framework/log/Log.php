@@ -12,14 +12,14 @@ use \SeasLog;
  */
 class Log
 {
-    public function __construct()
+    public function __construct($module)
     {
         #SeasLog init
     }
 
     public function __destruct()
     {
-        #SeasLog distroy
+
     }
 
     /**
