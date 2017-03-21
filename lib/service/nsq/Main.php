@@ -46,8 +46,10 @@ class Main extends Service implements ServerInterface {
                 }
                 $topic = substr($val, 0, $i);
                 $channel = substr($val, $i + 1);
-                echo $topic,'===',$channel;
-                $nsq->subscribe();
+                echo $topic,'==',$channel;
+                $nsq->subscribe($topic,$channel,function(){
+                    echo 111;
+                });
             }
         } else {
             throw new ServiceException($this->serverName . ':未订阅任何话题,退出', 8013);
