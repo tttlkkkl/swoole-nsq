@@ -37,10 +37,16 @@ class Main extends Service implements ServerInterface {
         // 排队策略，重试10次，延时50秒
         $reQueueStrategy = new FixedDelay(10, 50);
         $nsq = new Nsq($lookUpd, $deDupe, $reQueueStrategy, $nsqLog);
-        $topicChannel = array_unique(explode(',', $this->NsqConfig->get('topicChannel')));
-        if ($topicChannel && is_array($topicChannel)) {
-            foreach ($topicChannel as $val) {
-
+        $topicChannelArr = array_unique(explode(',', $this->NsqConfig->get('topicChannel')));
+        if ($topicChannelArr && is_array($topicChannelArr)) {
+            foreach ($topicChannelArr as $val) {
+                $i = strpos($val, ':');
+                if ($i === false) {
+                    continue;
+                }
+                $topic = substr($val, 0, $i);
+                $channel = substr($val, $i + 1);
+                echo $topic,'===',$channel;
                 $nsq->subscribe();
             }
         } else {

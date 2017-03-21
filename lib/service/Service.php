@@ -87,6 +87,7 @@ class Service {
         );
         $this->serverSet();
         $this->setCallback(3, $this->server, $serverCallback);
+        $this->server->start();
     }
 
     /**
@@ -115,6 +116,7 @@ class Service {
             }
             if (isset($serverSet['daemonize'])) {
                 $this->daemonize = $serverSet['daemonize'];
+                Log::setPrintParam(1);
             }
             $this->server->set($serverSet);
         }
@@ -175,14 +177,18 @@ class Service {
      */
     public final function onStart(Server $server) {
         Log::info($this->serverName . ': 服务启动...', [], $this->logPath);
-        if ($this->daemonize !== true) {
-            echo $this->serverName . ': 服务启动...', "\n";
-        }
         //记录主进程pid
-        \file_put_contents(PID_PATH . $this->serverName . '.pid', [
-            'master_pid'  => $server->master_pid,
-            'manager_pid' => $server->manager_pid
-        ]);
+        try{
+            $pidWrite=\file_put_contents(PID_PATH . $this->serverName . '.pid', [
+                'master_pid'  => $server->master_pid,
+                'manager_pid' => $server->manager_pid
+            ]);
+        }catch (ServiceException $E){
+            $pidWrite=false;
+        }
+        if(!$pidWrite){
+            Log::info($this->serverName . ': pid生成记录失败...', [], $this->logPath);
+        }
         $this->cliSetProcessTitle('Master');
     }
 
@@ -226,12 +232,8 @@ class Service {
         } else {
             $msg = $this->serverName . ': event_worker 启动...';
             $this->cliSetProcessTitle('event_worker');
-
         }
         Log::info($msg, [], $this->logPath);
-        if ($this->daemonize !== true) {
-            echo $msg, "\n";
-        }
 
     }
 

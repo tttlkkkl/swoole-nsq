@@ -10,15 +10,18 @@ use \SeasLog;
  * Time: 上午12:14
  * author :李华 yehong0000@163.com
  */
-class Log
-{
-    public function __construct($module)
-    {
+class Log {
+    /**
+     * 是否直接输出日志
+     * @var
+     */
+    protected static $isPrintLog;
+
+    public function __construct($module) {
         #SeasLog init
     }
 
-    public function __destruct()
-    {
+    public function __destruct() {
 
     }
 
@@ -29,8 +32,7 @@ class Log
      *
      * @return bool
      */
-    static public function setBasePath($basePath)
-    {
+    static public function setBasePath($basePath) {
         return SeasLog::setBasePath($basePath);
     }
 
@@ -39,8 +41,7 @@ class Log
      *
      * @return string
      */
-    static public function getBasePath()
-    {
+    static public function getBasePath() {
         return SeasLog::getBasePath();
     }
 
@@ -51,8 +52,7 @@ class Log
      *
      * @return bool
      */
-    static public function setLogger($module)
-    {
+    static public function setLogger($module) {
         return SeasLog::setLogger($module);
     }
 
@@ -60,8 +60,7 @@ class Log
      * 获取最后一次设置的模块目录
      * @return string
      */
-    static public function getLastLogger()
-    {
+    static public function getLastLogger() {
         return SeasLog::getLastLogger();
     }
 
@@ -72,8 +71,7 @@ class Log
      *
      * @return bool
      */
-    static public function setDatetimeFormat($format)
-    {
+    static public function setDatetimeFormat($format) {
         return SeasLog::setDatetimeFormat($format);
     }
 
@@ -81,8 +79,7 @@ class Log
      * 返回当前DatetimeFormat配置格式
      * @return string
      */
-    static public function getDatetimeFormat()
-    {
+    static public function getDatetimeFormat() {
         return SeasLog::getDatetimeFormat();
     }
 
@@ -95,8 +92,7 @@ class Log
      *
      * @return array | long
      */
-    static public function analyzerCount($level = 'all', $log_path = '*', $key_word = NULL)
-    {
+    static public function analyzerCount($level = 'all', $log_path = '*', $key_word = NULL) {
         return SeasLog::analyzerCount($level, $log_path, $key_word);
     }
 
@@ -112,8 +108,7 @@ class Log
      *
      * @return array
      */
-    static public function analyzerDetail($level = SEASLOG_INFO, $log_path = '*', $key_word = NULL, $start = 1, $limit = 20, $order = SEASLOG_DETAIL_ORDER_ASC)
-    {
+    static public function analyzerDetail($level = SEASLOG_INFO, $log_path = '*', $key_word = NULL, $start = 1, $limit = 20, $order = SEASLOG_DETAIL_ORDER_ASC) {
         return SeasLog::analyzerDetail($level, $log_path, $key_word, $start, $limit, $order);
     }
 
@@ -122,8 +117,7 @@ class Log
      *
      * @return array
      */
-    static public function getBuffer()
-    {
+    static public function getBuffer() {
         return SeasLog::getBuffer();
     }
 
@@ -132,8 +126,7 @@ class Log
      *
      * @return bool
      */
-    static public function flushBuffer()
-    {
+    static public function flushBuffer() {
         return SeasLog::flushBuffer();
     }
 
@@ -144,8 +137,9 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function debug($message, array $content = array(), $module = '')
-    {
+    static public function debug($message, array $content = array(), $module = '') {
+        self::printLog(SEASLOG_DEBUG,$message,$content);
+
         return SeasLog::debug($message, $content, $module);
     }
 
@@ -156,8 +150,9 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function info($message, array $content = array(), $module = '')
-    {
+    static public function info($message, array $content = array(), $module = '') {
+        self::printLog(SEASLOG_INFO,$message,$content);
+
         return SeasLog::info($message, $content, $module);
     }
 
@@ -168,9 +163,10 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function notice($message, array $content = array(), $module = '')
-    {
+    static public function notice($message, array $content = array(), $module = '') {
         #$level = SEASLOG_NOTICE
+        self::printLog(SEASLOG_NOTICE,$message,$content);
+
         return SeasLog::notice($message, $content, $module);
     }
 
@@ -181,9 +177,10 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function warning($message, array $content = array(), $module = '')
-    {
+    static public function warning($message, array $content = array(), $module = '') {
         #$level = SEASLOG_WARNING
+        self::printLog(SEASLOG_WARNING,$message,$content);
+
         return SeasLog::warning($message, $content, $module);
     }
 
@@ -194,9 +191,10 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function error($message, $content, $module)
-    {
+    static public function error($message, $content, $module) {
         #$level = SEASLOG_ERROR
+        self::printLog(SEASLOG_ERROR,$message,$content);
+
         return SeasLog::error($message, $content, $module);
     }
 
@@ -207,9 +205,9 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function critical($message, array $content = array(), $module = '')
-    {
+    static public function critical($message, array $content = array(), $module = '') {
         #$level = SEASLOG_CRITICAL
+        self::printLog(SEASLOG_CRITICAL,$message,$content);
         return SeasLog::critical($message, $content, $module);
     }
 
@@ -220,9 +218,9 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function alert($message, array $content = array(), $module = '')
-    {
+    static public function alert($message, array $content = array(), $module = '') {
         #$level = SEASLOG_ALERT
+        self::printLog(SEASLOG_ALERT,$message,$content);
         return SeasLog::alert($message, $content, $module);
     }
 
@@ -233,9 +231,9 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function emergency($message, array $content = array(), $module = '')
-    {
+    static public function emergency($message, array $content = array(), $module = '') {
         #$level = SEASLOG_EMERGENCY
+        self::printLog(SEASLOG_EMERGENCY,$message,$content);
         return SeasLog::emergency($message, $content, $module);
     }
 
@@ -247,8 +245,31 @@ class Log
      * @param array $content
      * @param string $module
      */
-    static public function log($level, $message, array $content = array(), $module = '')
-    {
+    static public function log($level, $message, array $content = array(), $module = '') {
+        self::printLog($level,$message,$content);
         return SeasLog::log($level, $message, $content, $module);
+    }
+
+    /**
+     * @param int $param 1直接输出,0不输出
+     */
+    static public function setPrintParam($param = 1) {
+        self::$isPrintLog = $param;
+    }
+
+    /**
+     * 向终端输出日志内容
+     *
+     * @param $level
+     * @param $message
+     * @param $content
+     */
+    static private function printLog($level, $message, $content) {
+        if (self::$isPrintLog) {
+            $str = preg_replace_callback("/\{(.*?)\}/", function ($vs) use ($content) {
+                return isset($content[$vs[1]]) ?: '';
+            }, $message);
+            echo $level . "\t" . $str . "\n";
+        }
     }
 }

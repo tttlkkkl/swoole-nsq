@@ -9,7 +9,7 @@ require('__autoloader.php');
 define('ROOT', dirname(dirname(__DIR__)));
 define('DS', DIRECTORY_SEPARATOR);
 define('CONF_PATH', ROOT . DS . 'conf' . DS);
-define('PID_PATH', ROOT . DS . 'bin' . DS . 'pid');
+define('PID_PATH', ROOT . DS . 'bin' . DS . 'pid'.DS);
 
 $MainConfig = lib\framework\main\Config::getInstance('main');
 $logPath = $MainConfig->get('logPath');
