@@ -43,14 +43,32 @@ class Service {
      * @throws ServiceException
      */
     public function serverInit($serverName, ServerInterface $serverCallback) {
+        $this->server = new \Swoole\Server("127.0.0.1", 9501);
+        $this->server->set(array(
+            'worker_num' => 8,   //工作进程数量
+            'daemonize' => false, //是否作为守护进程
+        ));
+        $this->server->on('connect', function ($serv, $fd){
+            echo "Client:Connect.\n";
+        });
+        $this->server->on('receive', function ($serv, $fd, $from_id, $data) {
+            $this->server->send($fd, 'Swoole: '.$data);
+            echo "Client: receive.{$data}\n";
+        });
+        $this->server->on('task', function ($serv, $fd) {
+            echo "Client: Close.\n";
+        });
+        $this->server->start();
+        return;
         $this->setConfig($serverName);
         $this->serverName = $serverName;
-        $this->server = new Server(
-            $this->config->get('server.ip') ?: '0.0.0.0',
-            $this->config->get('server.port') ?: 9501,
-            $this->config->get('server.model') !== null ? $this->config->get('server.model') : SWOOLE_BASE,
-            $this->config->get('server.socket') !== null ? $this->config->get('server.socket') : SWOOLE_SOCK_TCP
-        );
+        $this->server=new \Swoole\Server("127.0.0.1", 9501);
+//        $this->server = new Server(
+//            $this->config->get('server.ip') ?: '0.0.0.0',
+//            $this->config->get('server.port') ?: 9501,
+//            $this->config->get('server.model') !== null ? $this->config->get('server.model') : SWOOLE_BASE,
+//            $this->config->get('server.socket') !== null ? $this->config->get('server.socket') : SWOOLE_SOCK_ASYNC
+//        );
         $this->serverSet();
         $this->setCallback(1, $this->server, $serverCallback);
     }
@@ -87,7 +105,6 @@ class Service {
         );
         $this->serverSet();
         $this->setCallback(3, $this->server, $serverCallback);
-        $this->server->start();
     }
 
     /**
@@ -153,7 +170,7 @@ class Service {
         $server->on('close', [$serverCallback, 'onClose']);
         $server->on('task', [$serverCallback, 'onTask']);
         $server->on('finish', [$serverCallback, 'onFinish']);
-        $server->on('pipeMessage', [$serverCallback, 'onPipeMessage']);
+        //$server->on('pipeMessage', [$serverCallback, 'onPipeMessage']);
         //webSocket和server额外回调
         if ($type === 1 || $type === 3) {
             $server->on('connect', [$serverCallback, 'onConnect']);
@@ -168,6 +185,8 @@ class Service {
         if ($type === 3) {
             $server->on('request', [$serverCallback, 'onRequest']);
         }
+        echo 333;
+        var_dump($server->setting);
     }
 
     /**
@@ -204,7 +223,7 @@ class Service {
      * @param Server $server
      * @param $worker_id
      */
-    public final function onManagerStart(Server $server, $worker_id) {
+    public final function onManagerStart(Server $server) {
         Log::info($this->serverName . ': manager 启动...', [], $this->logPath);
         $this->cliSetProcessTitle('manager');
     }

@@ -9,5 +9,7 @@
 namespace lib\service\nsq;
 class Route
 {
-
+    public static function dispatcher($data){
+        var_dump($data);
+    }
 }

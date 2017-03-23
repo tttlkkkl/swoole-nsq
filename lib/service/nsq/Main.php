@@ -15,21 +15,24 @@ use lib\framework\nsq\Lookup\Nsqlookupd;
  * Class Main
  * 类功能
  *
- * @datetime: 2017/3/16 14:36
- * @author: lihs
+ * @datetime : 2017/3/16 14:36
+ * @author   : lihs
  * @copyright: ec
  */
-class Main extends Service implements ServerInterface {
+class Main extends Service implements ServerInterface
+{
 
     protected $NsqConfig;
     protected $logPath;
 
-    public function __construct($serverName) {
+    public function __construct($serverName)
+    {
         parent::serverInit($serverName, $this);
         $this->setConfig($serverName);
     }
 
-    public function subscribe() {
+    public function subscribe()
+    {
         $lookUpd = new Nsqlookupd($this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4161'));
         $nsqLog = new NsqLog($this->logPath);
         //消息去重规则
@@ -45,9 +48,16 @@ class Main extends Service implements ServerInterface {
                     continue;
                 }
                 $topic = substr($val, 0, $i);
-                $channel = substr($val, $i + 1);
-                $nsq->subscribe($topic,$channel,function($msg, $topic, $channel){
-                    echo 111;
+                $channel = substr($val, $i + 1);        echo 444;
+
+                $nsq->subscribe($topic, $channel, function ($msg) use ($topic, $channel) {
+                    $data = [
+                        'topic'   => $topic,
+                        'channel' => $channel,
+                        'msg'     => $msg
+                    ];
+                    //var_dump($msg);
+                    $this->server->task($data);
                 });
             }
         } else {
@@ -58,7 +68,8 @@ class Main extends Service implements ServerInterface {
     /**
      * @param $serverName
      */
-    private function setConfig($serverName) {
+    private function setConfig($serverName)
+    {
         $this->NsqConfig = Config::getInstance('nsq');
         $this->NsqConfig->setBaseKey($serverName);
         $this->logPath = $this->NsqConfig->get('logPath') ?: $serverName;
@@ -73,7 +84,8 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onConnect(Server $server, $fd, $from_id) {
+    public function onConnect(Server $server, $fd, $from_id)
+    {
     }
 
     /**
@@ -86,7 +98,8 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onReceive(Server $server, $fd, $from_id, $data) {
+    public function onReceive(Server $server, $fd, $from_id, $data)
+    {
     }
 
     /**
@@ -98,7 +111,8 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onPacket(Server $server, $data, array $client_info) {
+    public function onPacket(Server $server, $data, array $client_info)
+    {
     }
 
     /**
@@ -110,7 +124,8 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onClose(Server $server, $fd, $reactorId) {
+    public function onClose(Server $server, $fd, $reactorId)
+    {
     }
 
     /**
@@ -123,7 +138,9 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onTask(Server $server, $task_id, $src_worker_id, $data) {
+    public function onTask(Server $server, $task_id, $src_worker_id, $data)
+    {
+        var_dump($data);
     }
 
     /**
@@ -135,7 +152,8 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onFinish(Server $server, $task_id, $data) {
+    public function onFinish(Server $server, $task_id, $data)
+    {
     }
 
     /**
@@ -147,6 +165,7 @@ class Main extends Service implements ServerInterface {
      *
      * @return mixed
      */
-    public function onPipeMessage(Server $server, $from_worker_id, $message) {
+    public function onPipeMessage(Server $server, $from_worker_id, $message)
+    {
     }
 }
