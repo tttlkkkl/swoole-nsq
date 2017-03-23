@@ -46,7 +46,7 @@ class Main extends Service implements ServerInterface {
                 }
                 $topic = substr($val, 0, $i);
                 $channel = substr($val, $i + 1);
-                $nsq->subscribe($topic,$channel,function(){
+                $nsq->subscribe($topic,$channel,function($msg, $topic, $channel){
                     echo 111;
                 });
             }

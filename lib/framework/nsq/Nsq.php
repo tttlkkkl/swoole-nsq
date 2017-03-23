@@ -12,8 +12,7 @@ use lib\framework\nsq\RequeueStrategy\RequeueStrategyInterface;
 use lib\framework\nsq\Message\MessageInterface;
 use lib\framework\nsq\Message\Message;
 
-class Nsq
-{
+class Nsq {
     /**
      * Publish "consistency levels" [ish]
      */
@@ -129,18 +128,17 @@ class Nsq
      * @param RequeueStrategyInterface|NULL $requeueStrategy Our strategy
      *      for dealing with failures whilst processing SUBbed messages via
      *      callback - if any (optional)
-       @param LoggerInterface|NULL $logger Logging service (optional)
+     * @param LoggerInterface|NULL $logger Logging service (optional)
      */
     public function __construct(
-            LookupInterface $nsLookup = NULL,
-            DedupeInterface $dedupe = NULL,
-            RequeueStrategyInterface $requeueStrategy = NULL,
-            LoggerInterface $logger = NULL,
-            $connectionTimeout = 3,
-            $readWriteTimeout = 3,
-            $readWaitTimeout = 15
-            )
-    {
+        LookupInterface $nsLookup = NULL,
+        DedupeInterface $dedupe = NULL,
+        RequeueStrategyInterface $requeueStrategy = NULL,
+        LoggerInterface $logger = NULL,
+        $connectionTimeout = 3,
+        $readWriteTimeout = 3,
+        $readWaitTimeout = 15
+    ) {
         $this->nsLookup = $nsLookup;
         $this->dedupe = $dedupe;
         $this->requeueStrategy = $requeueStrategy;
@@ -167,16 +165,14 @@ class Nsq
      *
      * @param RequeueStrategyInterface
      */
-    public function setRequeueStrategy(RequeueStrategyInterface $requeueStrategy = NULL)
-    {
+    public function setRequeueStrategy(RequeueStrategyInterface $requeueStrategy = NULL) {
         $this->requeueStrategy = $requeueStrategy;
     }
 
     /**
      * Destructor
      */
-    public function __destruct()
-    {
+    public function __destruct() {
         // say goodbye to each connection
         foreach ($this->subConnectionPool as $connection) {
             $connection->write($this->writer->close());
@@ -203,8 +199,7 @@ class Nsq
      *
      * @return nsqphp This instance for call chaining
      */
-    public function publishTo($hosts, $cl = NULL)
-    {
+    public function publishTo($hosts, $cl = NULL) {
         $this->pubConnectionPool = new Connection\ConnectionPool;
 
         if (!is_array($hosts)) {
@@ -217,14 +212,14 @@ class Nsq
 
             $parts = explode(':', $h);
             $conn = new Connection\Connection(
-                    $parts[0],
-                    isset($parts[1]) ? $parts[1] : NULL,
-                    $this->connectionTimeout,
-                    $this->readWriteTimeout,
-                    $this->readWaitTimeout,
-                    FALSE,      // blocking
-                    array($this, 'connectionCallback')
-                    );
+                $parts[0],
+                isset($parts[1]) ? $parts[1] : NULL,
+                $this->connectionTimeout,
+                $this->readWriteTimeout,
+                $this->readWaitTimeout,
+                FALSE,      // blocking
+                array($this, 'connectionCallback')
+            );
             $this->pubConnectionPool->add($conn);
         }
 
@@ -262,8 +257,7 @@ class Nsq
      *
      * @return nsqphp This instance for call chaining
      */
-    public function publish($topic, MessageInterface $msg)
-    {
+    public function publish($topic, MessageInterface $msg) {
         // pick a random
         $this->pubConnectionPool->shuffle();
 
@@ -295,15 +289,14 @@ class Nsq
 
         if ($success < $this->pubSuccessCount) {
             throw new Exception\PublishException(
-                    sprintf('Failed to publish message; required %s for success, achieved %s. Errors were: %s', $this->pubSuccessCount, $success, implode(', ', $errors))
-                    );
+                sprintf('Failed to publish message; required %s for success, achieved %s. Errors were: %s', $this->pubSuccessCount, $success, implode(', ', $errors))
+            );
         }
 
         return $this;
     }
 
-    public function tryFunc(Callable $func, ConnectionInterface $conn, $tries = 1)
-    {
+    public function tryFunc(Callable $func, ConnectionInterface $conn, $tries = 1) {
         $lastException = NULL;
         for ($try = 0; $try <= $tries; $try++) {
             try {
@@ -335,19 +328,18 @@ class Nsq
      *
      * @return nsqphp This instance of call chaining
      */
-    public function subscribe($topic, $channel, $callback)
-    {
+    public function subscribe($topic, $channel, $callback) {
         if ($this->nsLookup === NULL) {
             throw new \RuntimeException(
-                    'nsqphp initialised without providing lookup service (required for sub).'
-                    );
+                'nsqphp initialised without providing lookup service (required for sub).'
+            );
         }
         if (!is_callable($callback)) {
             throw new \InvalidArgumentException(
-                    '"callback" invalid; expecting a PHP callable'
-                    );
+                '"callback" invalid; expecting a PHP callable'
+            );
         }
-        
+
         // we need to instantiate a new connection for every nsqd that we need
         // to fetch messages from for this topic/channel
 
@@ -359,13 +351,13 @@ class Nsq
         foreach ($hosts as $host) {
             $parts = explode(':', $host);
             $conn = new Connection\Connection(
-                    $parts[0],
-                    isset($parts[1]) ? $parts[1] : NULL,
-                    $this->connectionTimeout,
-                    $this->readWriteTimeout,
-                    $this->readWaitTimeout,
-                    TRUE    // non-blocking
-                    );
+                $parts[0],
+                isset($parts[1]) ? $parts[1] : NULL,
+                $this->connectionTimeout,
+                $this->readWriteTimeout,
+                $this->readWaitTimeout,
+                TRUE    // non-blocking
+            );
             if ($this->logger) {
                 $this->logger->info("Connecting to {$host} and saying hello");
             }
@@ -382,21 +374,20 @@ class Nsq
             $conn->write($this->writer->subscribe($topic, $channel, $this->shortId, $this->longId));
             $conn->write($this->writer->ready(1));
         }
-        
+
         return $this;
     }
 
-    
+
     /**
      * Read/dispatch callback for async sub loop
-     * 
+     *
      * @param Resource $socket The socket that a message is available on
      * @param string $topic The topic subscribed to that yielded this message
      * @param string $channel The channel subscribed to that yielded this message
      * @param callable $callback The callback to execute to process this message
      */
-    public function readAndDispatchMessage($socket, $topic, $channel, $callback)
-    {
+    public function readAndDispatchMessage($socket, $topic, $channel, $callback) {
         $connection = $this->subConnectionPool->find($socket);
         $frame = $this->reader->readFrame($connection);
 
@@ -421,19 +412,20 @@ class Nsq
             } else {
                 //没有重复消息进入正常业务
                 try {
-                    call_user_func($callback, $msg);
+                    call_user_func($callback, $msg, $topic, $channel);
                 } catch (\Exception $e) {
                     //擦除重复数据标记
                     if ($this->dedupe !== NULL) {
                         $this->dedupe->erase($topic, $channel, $msg);
                     }
-                    
+
                     if ($this->logger) {
                         $this->logger->warn(sprintf('Error processing [%s] "%s": %s', (string)$connection, $msg->getId(), $e->getMessage()));
                     }
                     //重新排队策略
                     if ($this->requeueStrategy !== NULL
-                            && ($delay = $this->requeueStrategy->shouldRequeue($msg)) !== NULL) {
+                        && ($delay = $this->requeueStrategy->shouldRequeue($msg)) !== NULL
+                    ) {
                         // requeue
                         if ($this->logger) {
                             $this->logger->debug(sprintf('Requeuing [%s] "%s" with delay "%s"', (string)$connection, $msg->getId(), $delay));
@@ -448,7 +440,7 @@ class Nsq
                     }
                 }
             }
-            
+
             // mark as done; get next on the way
             $connection->write($this->writer->finish($msg->getId()));
             $connection->write($this->writer->ready(1));
@@ -462,14 +454,13 @@ class Nsq
             throw new Exception\ProtocolException("Error/unexpected frame received: " . json_encode($frame));
         }
     }
-    
+
     /**
      * Connection callback
-     * 
+     *
      * @param ConnectionInterface $connection
      */
-    public function connectionCallback(ConnectionInterface $connection)
-    {
+    public function connectionCallback(ConnectionInterface $connection) {
         if ($this->logger) {
             $this->logger->info("Connecting to " . (string)$connection . " and saying hello");
         }

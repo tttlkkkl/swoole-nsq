@@ -168,7 +168,6 @@ class Service {
         if ($type === 3) {
             $server->on('request', [$serverCallback, 'onRequest']);
         }
-        //$server->start();
     }
 
     /**
