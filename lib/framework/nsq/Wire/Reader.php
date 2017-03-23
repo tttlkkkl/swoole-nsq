@@ -176,7 +176,7 @@ class Reader
         $hi = sprintf("%u", $hi[1]);
         $lo = sprintf("%u", $lo[1]);
 
-        return bcadd(bcmul($hi, "4294967296" ), $lo);
+        return \bcadd(bcmul($hi, "4294967296" ), $lo);
     }
 
     /**

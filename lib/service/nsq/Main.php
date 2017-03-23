@@ -30,7 +30,7 @@ class Main extends Service implements ServerInterface {
     }
 
     public function subscribe() {
-        $lookUpd = new Nsqlookupd($this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4151'));
+        $lookUpd = new Nsqlookupd($this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4161'));
         $nsqLog = new NsqLog($this->logPath);
         //消息去重规则
         $deDupe = new Dedupe();
@@ -46,8 +46,9 @@ class Main extends Service implements ServerInterface {
                 }
                 $topic = substr($val, 0, $i);
                 $channel = substr($val, $i + 1);
-                echo $topic,'===',$channel;
-                $nsq->subscribe();
+                $nsq->subscribe($topic,$channel,function(){
+                    echo 111;
+                });
             }
         } else {
             throw new ServiceException($this->serverName . ':未订阅任何话题,退出', 8013);
