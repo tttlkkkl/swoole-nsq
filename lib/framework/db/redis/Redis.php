@@ -65,8 +65,10 @@ class Redis {
 
         // 建立连接
         $func = $this->config['persistent'] ? 'pconnect' : 'connect';
-        $this->handler->$func($this->config['host'], $this->config['port'], $this->config['timeout']);
-
+        $connection = call_user_func([$this->handler, $func], $this->config['host'], $this->config['port'], $this->config['timeout']);
+        if (!$connection) {
+            throw new \Exception($this->handler->getLastError());
+        }
         if ('' != $this->config['password']) {
             $this->handler->auth($this->config['password']);
         }
