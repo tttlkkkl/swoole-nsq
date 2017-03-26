@@ -15,7 +15,7 @@ if (!$client->connect('127.0.0.1', 9501, -1))
     exit("connect failed. Error: {$client->errCode}\n");
 }
 while (1) {
-    $client->send("hello world\n");
+    $client->send("clint send hello world\n");
     $msg['random'] = uniqid();
     $data = json_encode($msg, JSON_UNESCAPED_UNICODE);
     try {

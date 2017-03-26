@@ -48,23 +48,29 @@ class Main extends Service implements ServerInterface
                     continue;
                 }
                 $topic = substr($val, 0, $i);
-                $channel = substr($val, $i + 1);        echo 444;
-
+                $channel = substr($val, $i + 1);
                 $nsq->subscribe($topic, $channel, function ($msg) use ($topic, $channel) {
                     $data = [
                         'topic'   => $topic,
                         'channel' => $channel,
                         'msg'     => $msg
                     ];
-                    //var_dump($msg);
-                    $this->server->task($data);
-                });
+                    var_dump($msg);
+                    //$this->server->task($data);
+                },$this->server);
             }
         } else {
             throw new ServiceException($this->serverName . ':未订阅任何话题,退出', 8013);
         }
     }
 
+    public function startServer(){
+        echo "启动=============================================================";
+        if(!isset($this->start)){
+            $this->start=1;
+            $this->server->start();
+        }
+    }
     /**
      * @param $serverName
      */
@@ -100,6 +106,8 @@ class Main extends Service implements ServerInterface
      */
     public function onReceive(Server $server, $fd, $from_id, $data)
     {
+        $server->send($fd,'hello');
+        $server->task($data);
     }
 
     /**

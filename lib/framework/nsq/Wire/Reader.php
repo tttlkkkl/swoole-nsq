@@ -15,9 +15,9 @@ class Reader
     /**
      * Frame types
      */
-    const FRAME_TYPE_RESPONSE = 0;
-    const FRAME_TYPE_ERROR = 1;
-    const FRAME_TYPE_MESSAGE = 2;
+    const FRAME_TYPE_RESPONSE = 0;//响应
+    const FRAME_TYPE_ERROR = 1;//错误响应
+    const FRAME_TYPE_MESSAGE = 2;//消息响应
     
     /**
      * Heartbeat response content
@@ -52,7 +52,7 @@ class Reader
             'type'  => $frameType,
             'size'  => $size
             );
-        
+
         try {
             switch ($frameType) {
                 case self::FRAME_TYPE_RESPONSE:
@@ -65,7 +65,7 @@ class Reader
                     $frame['ts'] = $this->readLong($connection);
                     $frame['attempts'] = $this->readShort($connection);
                     $frame['id'] = $this->readString($connection, 16);
-                    $frame['payload'] = $this->readString($connection, $size - 30);
+                    $framepublic['payload'] = $this->readString($connection, $size - 30);
                     break;
                 default:
                     throw new UnknownFrameException($this->readString($connection, $size-4));

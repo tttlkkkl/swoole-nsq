@@ -182,7 +182,7 @@ class Connection implements ConnectionInterface
      *
      * @param string $buf The data to write
      */
-    public function write($buf)
+    public function x1write($buf)
     {
         $null = NULL;
         $write = array($socket = $this->getSocket());

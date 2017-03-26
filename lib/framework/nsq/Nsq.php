@@ -11,6 +11,8 @@ use lib\framework\nsq\Dedupe\DedupeInterface;
 use lib\framework\nsq\RequeueStrategy\RequeueStrategyInterface;
 use lib\framework\nsq\Message\MessageInterface;
 use lib\framework\nsq\Message\Message;
+use lib\framework\nsq\Connection\Connection;
+use lib\framework\nsq\Connection\ConnectionPool;
 
 class Nsq {
     /**
@@ -149,7 +151,7 @@ class Nsq {
         $this->readWaitTimeout = $readWaitTimeout;
         $this->pubSuccessCount = 1;
 
-        $this->subConnectionPool = new Connection\ConnectionPool;
+        $this->subConnectionPool = new ConnectionPool;
 
         $this->reader = new Wire\Reader;
         $this->writer = new Wire\Writer;
@@ -328,7 +330,7 @@ class Nsq {
      *
      * @return nsqphp This instance of call chaining
      */
-    public function subscribe($topic, $channel, $callback) {
+    public function subscribe($topic, $channel, $callback,$server) {
         if ($this->nsLookup === NULL) {
             throw new \RuntimeException(
                 'nsqphp initialised without providing lookup service (required for sub).'
@@ -339,7 +341,6 @@ class Nsq {
                 '"callback" invalid; expecting a PHP callable'
             );
         }
-
         // we need to instantiate a new connection for every nsqd that we need
         // to fetch messages from for this topic/channel
 
@@ -350,7 +351,7 @@ class Nsq {
 
         foreach ($hosts as $host) {
             $parts = explode(':', $host);
-            $conn = new Connection\Connection(
+            $conn = new Connection(
                 $parts[0],
                 isset($parts[1]) ? $parts[1] : NULL,
                 $this->connectionTimeout,
@@ -366,9 +367,9 @@ class Nsq {
             $socket = $conn->getSocket();
             $nsq = $this;
             //将socket纳入swoole事件监听
-
-            swoole_event_add($socket, function ($socket) use ($nsq, $callback, $topic, $channel) {
+            \Swoole\Event::add($socket, function ($socket,$nsq,$topic,$channel,$callback) {
                 $nsq->readAndDispatchMessage($socket, $topic, $channel, $callback);
+
             });
             // subscribe
             $conn->write($this->writer->subscribe($topic, $channel, $this->shortId, $this->longId));
