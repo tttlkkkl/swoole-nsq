@@ -19,7 +19,7 @@ class NsqClient
         $s = isset($opt['s']) && $opt['s'] > 0 ? abs(intval($opt['s'])) : 5;
         $url = 'http://127.0.0.1:4151/pub?topic=nsq_common';
         $msg = [
-            'target' => 1,
+            'target' => 'member/member/pullMember',
             'data'   => [
                 1, 2
             ],

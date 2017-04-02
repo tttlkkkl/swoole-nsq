@@ -12,6 +12,7 @@ use lib\service\nsq\Handle;
 use lib\Nsq;
 use lib\lookup\Lookup;
 use lib\client\Client;
+use lib\service\nsq\common\Route;
 
 /**
  * Class Main
@@ -58,7 +59,6 @@ class Main extends Service implements ServerInterface
         } else {
             throw new ServiceException('', -1);
         }
-
         $lookupConfig = $this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4161');
         $Lookup = new Lookup($lookupConfig);
         $nsqdList = $Lookup->lookupHosts($topic);
@@ -133,7 +133,6 @@ class Main extends Service implements ServerInterface
     public function onReceive(Server $server, $fd, $from_id, $data)
     {
         $server->send($fd, 'hello');
-        $server->task($data);
     }
 
     /**
@@ -174,8 +173,14 @@ class Main extends Service implements ServerInterface
      */
     public function onTask(Server $server, $task_id, $src_worker_id, $data)
     {
-        echo "收到任务投递\n";
-        var_dump($data);
+        Log::debug('收到任务投递'.json_encode($data));
+        try{
+            Route::dispatcher($data);
+            $server->finish([$data['id'],false]);
+        }catch(\Exception $E){
+            $server->finish([$data['id'],true]);
+            Log::error('任务处理失败'.json_encode($data));
+        }
     }
 
     /**
@@ -189,6 +194,8 @@ class Main extends Service implements ServerInterface
      */
     public function onFinish(Server $server, $task_id, $data)
     {
+        print_r($data);
+        echo "任务完成\n";
     }
 
     /**
