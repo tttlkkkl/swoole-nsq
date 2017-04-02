@@ -19,6 +19,10 @@ class Server extends Main
     }
 
     public function start(){
-        $this->subscribe();
+        try{
+            parent::start();
+        }catch(\Exception $E){
+            echo $E->getMessage(),"\n";
+        }
     }
 }

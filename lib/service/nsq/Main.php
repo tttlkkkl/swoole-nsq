@@ -2,14 +2,16 @@
 namespace lib\service\nsq;
 
 use lib\framework\exception\ServiceException;
+use lib\framework\log\Log;
 use lib\framework\main\Config;
-use lib\framework\nsq\RequeueStrategy\FixedDelay;
+use lib\NsqClient;
 use lib\service\ServerInterface;
 use lib\service\Service;
 use Swoole\Server;
-
-use lib\framework\nsq\Nsq;
-use lib\framework\nsq\Lookup\Nsqlookupd;
+use lib\service\nsq\Handle;
+use lib\Nsq;
+use lib\lookup\Lookup;
+use lib\client\Client;
 
 /**
  * Class Main
@@ -24,53 +26,77 @@ class Main extends Service implements ServerInterface
 
     protected $NsqConfig;
     protected $logPath;
+    protected $serverName;
 
     public function __construct($serverName)
     {
-        parent::serverInit($serverName, $this);
         $this->setConfig($serverName);
+        $this->serverName = $serverName;
     }
 
-    public function subscribe()
+    /**
+     * 启动
+     */
+    public function start()
     {
-        $lookUpd = new Nsqlookupd($this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4161'));
-        $nsqLog = new NsqLog($this->logPath);
-        //消息去重规则
-        $deDupe = new Dedupe();
-        // 排队策略，重试10次，延时50秒
-        $reQueueStrategy = new FixedDelay(10, 50);
-        $nsq = new Nsq($lookUpd, $deDupe, $reQueueStrategy, $nsqLog);
-        $topicChannelArr = array_unique(explode(',', $this->NsqConfig->get('topicChannel')));
-        if ($topicChannelArr && is_array($topicChannelArr)) {
-            foreach ($topicChannelArr as $val) {
-                $i = strpos($val, ':');
-                if ($i === false) {
-                    continue;
-                }
-                $topic = substr($val, 0, $i);
-                $channel = substr($val, $i + 1);
-                $nsq->subscribe($topic, $channel, function ($msg) use ($topic, $channel) {
-                    $data = [
-                        'topic'   => $topic,
-                        'channel' => $channel,
-                        'msg'     => $msg
-                    ];
-                    var_dump($msg);
-                    //$this->server->task($data);
-                },$this->server);
-            }
+        parent::serverInit($this->serverName, $this);
+    }
+
+    /**
+     * 订阅
+     *
+     * @throws ServiceException
+     * @throws \lib\exception\LookupException
+     */
+    public function init()
+    {
+        $topicChannel = $this->NsqConfig->get('topicChannel');
+        $authSecret = $this->NsqConfig->get('authSecret');
+        if (($index = strpos($topicChannel, ':'))) {
+            $topic = substr($topicChannel, 0, $index);
+            $channel = substr($topicChannel, $index + 1);
         } else {
-            throw new ServiceException($this->serverName . ':未订阅任何话题,退出', 8013);
+            throw new ServiceException('', -1);
+        }
+
+        $lookupConfig = $this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4161');
+        $Lookup = new Lookup($lookupConfig);
+        $nsqdList = $Lookup->lookupHosts($topic);
+        if (!$nsqdList || !isset($nsqdList['lookupHosts']) || !$nsqdList['lookupHosts'] || !is_array($nsqdList['lookupHosts'])) {
+            throw new ServiceException('未发现可用服务', -1);
+        }
+        $NsqLog = new NsqLog($this->logPath);
+        //重新定义消息去重规则
+        $Dedupe = new Dedupe();
+        $Handel = new Handle($this->server);
+        $NsqClient=new NsqClient();
+        foreach ($nsqdList['lookupHosts'] as $host) {
+            if (!$channel) {
+                $channel = isset($nsqdList['topicChannel'][$host][0]) ? $nsqdList['topicChannel'][$host][0] : 'nsq_swoole_client';
+            }
+            Log::info('开始订阅:' . $host . ':' . $topicChannel);
+            $Client = new Client($topic, $channel, $authSecret, $Handel, $NsqLog, $Dedupe);
+            $NsqClient->init($Client, $host);
         }
     }
 
-    public function startServer(){
-        echo "启动=============================================================";
-        if(!isset($this->start)){
-            $this->start=1;
-            $this->server->start();
+    /**
+     * 初始订阅副服务
+     *
+     * @param Server $server
+     * @param $worker_id
+     *
+     * @throws ServiceException
+     */
+    public function onWorkerStart(Server $server, $worker_id)
+    {
+        parent::onWorkerStart($server, $worker_id);
+        //在ｗｏｋｅｒ进程中启动订阅服务
+        if ($worker_id < $server->setting['worker_num']) {
+            $this->init();
         }
     }
+
     /**
      * @param $serverName
      */
@@ -106,7 +132,7 @@ class Main extends Service implements ServerInterface
      */
     public function onReceive(Server $server, $fd, $from_id, $data)
     {
-        $server->send($fd,'hello');
+        $server->send($fd, 'hello');
         $server->task($data);
     }
 
@@ -148,6 +174,7 @@ class Main extends Service implements ServerInterface
      */
     public function onTask(Server $server, $task_id, $src_worker_id, $data)
     {
+        echo "收到任务投递\n";
         var_dump($data);
     }
 

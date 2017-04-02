@@ -13,14 +13,10 @@ namespace lib\service\nsq;
 
 
 use lib\framework\db\redis\Redis;
-use lib\framework\nsq\Dedupe\DedupeInterface;
-use lib\framework\nsq\Message\MessageInterface;
-
+use lib\Dedupe\DedupeInterface;
+use lib\message\MessageInterface;
 class Dedupe implements DedupeInterface
 {
-//删除占位符
-    const DELETED = 'D';
-
     //redis连接对象
     private $Redis;
 
@@ -46,15 +42,14 @@ class Dedupe implements DedupeInterface
 
 
     /**
-     * 加入记录
-     *
-     * @param string $topic
-     * @param string $channel
+     * 添加消息到本地
+     * @param $topic
+     * @param $channel
      * @param MessageInterface $msg
      *
      * @return mixed
      */
-    public function containsAndAdd($topic, $channel, MessageInterface $msg)
+    public function add($topic, $channel, MessageInterface $msg)
     {
         $hashed = $this->hash($topic, $channel, $msg);
         $this->Redis->setEx($hashed['mcKey'], $this->expire, $hashed['content']);
@@ -63,17 +58,18 @@ class Dedupe implements DedupeInterface
 
 
     /**
-     * 擦除记录
-     *
-     * @param string $topic
-     * @param string $channel
+     * 将消息从本地清除
+     * @param $topic
+     * @param $channel
      * @param MessageInterface $msg
+     *
+     * @return mixed
      */
-    public function erase($topic, $channel, MessageInterface $msg)
+    public function clear($topic, $channel, MessageInterface $msg)
     {
         $hashed = $this->hash($topic, $channel, $msg);
         if ($hashed['seen']) {
-            $this->memcached->set($hashed['mcKey'], self::DELETED);
+            $this->Redis->del($hashed['mcKey']);
         }
     }
 
@@ -88,7 +84,7 @@ class Dedupe implements DedupeInterface
      */
     private function hash($topic, $channel, MessageInterface $msg)
     {
-        $element = "$topic:$channel:" . $msg->getPayload();
+        $element = "$topic:$channel:" . $msg->getMsg();
         $hash = hash('adler32', $element, TRUE);
         list(, $val) = unpack('N', $hash);
         $index = $val % $this->size;

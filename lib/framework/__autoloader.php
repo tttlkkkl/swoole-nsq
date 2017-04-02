@@ -12,7 +12,11 @@
 function __autoloader($className)
 {
     $dir = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR . str_replace('\\', '/', $className) . '.php';
-    require($dir);
+    if(is_file($dir)){
+        require($dir);
+    }else{
+        return false;
+    }
 }
 
 spl_autoload_register("__autoloader", true);

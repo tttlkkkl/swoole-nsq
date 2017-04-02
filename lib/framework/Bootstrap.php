@@ -9,7 +9,9 @@ require('__autoloader.php');
 define('ROOT', dirname(dirname(__DIR__)));
 define('DS', DIRECTORY_SEPARATOR);
 define('CONF_PATH', ROOT . DS . 'conf' . DS);
-define('PID_PATH', ROOT . DS . 'bin' . DS . 'pid'.DS);
+define('PID_PATH', ROOT . DS . 'bin' . DS . 'pid' . DS);
+define('LIB', ROOT . DS . 'lib' . DS);
+require(LIB . 'opt' . DS . 'nsq' . DS . 'Bootsrap.php');//ｎｓｑ客户端类库
 
 $MainConfig = lib\framework\main\Config::getInstance('main');
 $logPath = $MainConfig->get('logPath');
@@ -29,10 +31,8 @@ register_shutdown_function('handleFatal');
 function handleFatal()
 {
     $error = error_get_last();
-    if (isset($error['type']))
-    {
-        switch ($error['type'])
-        {
+    if (isset($error['type'])) {
+        switch ($error['type']) {
             case E_ERROR :
             case E_PARSE :
             case E_CORE_ERROR :
@@ -42,29 +42,23 @@ function handleFatal()
                 $line = $error['line'];
                 $log = "$message ($file:$line)\nStack trace:\n";
                 $trace = debug_backtrace();
-                foreach ($trace as $i => $t)
-                {
-                    if (!isset($t['file']))
-                    {
+                foreach ($trace as $i => $t) {
+                    if (!isset($t['file'])) {
                         $t['file'] = 'unknown';
                     }
-                    if (!isset($t['line']))
-                    {
+                    if (!isset($t['line'])) {
                         $t['line'] = 0;
                     }
-                    if (!isset($t['function']))
-                    {
+                    if (!isset($t['function'])) {
                         $t['function'] = 'unknown';
                     }
                     $log .= "#$i {$t['file']}({$t['line']}): ";
-                    if (isset($t['object']) and is_object($t['object']))
-                    {
+                    if (isset($t['object']) and is_object($t['object'])) {
                         $log .= get_class($t['object']) . '->';
                     }
                     $log .= "{$t['function']}()\n";
                 }
-                if (isset($_SERVER['REQUEST_URI']))
-                {
+                if (isset($_SERVER['REQUEST_URI'])) {
                     $log .= '[QUERY] ' . $_SERVER['REQUEST_URI'];
                 }
                 error_log($log);

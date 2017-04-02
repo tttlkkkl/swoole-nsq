@@ -12,10 +12,10 @@
 namespace lib\service\nsq;
 
 
-use lib\framework\nsq\Logger\LoggerInterface;
+use lib\log\LogInterface;
 use lib\framework\log\Log;
 
-class NsqLog implements LoggerInterface
+class NsqLog implements LogInterface
 {
     protected $logPath;
 

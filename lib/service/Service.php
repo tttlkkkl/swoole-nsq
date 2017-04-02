@@ -148,7 +148,7 @@ class Service {
         $server->on('workerError', [$this, 'onWorkerError']);
         $server->on('managerStart', [$this, 'onManagerStart']);
         $server->on('managerStop', [$this, 'onManagerStop']);
-        $server->on('workerStart', [$this, 'onWorkerStart']);
+        $server->on('workerStart', [$serverCallback, 'onWorkerStart']);
         $server->on('workerStop', [$serverCallback, 'onWorkerStop']);
         $server->on('close', [$serverCallback, 'onClose']);
         $server->on('task', [$serverCallback, 'onTask']);
@@ -168,6 +168,7 @@ class Service {
         if ($type === 3) {
             $server->on('request', [$serverCallback, 'onRequest']);
         }
+        $server->start();
     }
 
     /**
@@ -224,7 +225,7 @@ class Service {
      * @param Server $server
      * @param $worker_id
      */
-    public final function onWorkerStart(Server $server, $worker_id) {
+    public  function onWorkerStart(Server $server, $worker_id) {
         if ($worker_id >= $server->setting['worker_num']) {
             $msg = $this->serverName . ': task_worker  启动...';
             $this->cliSetProcessTitle('task_worker');
@@ -233,7 +234,6 @@ class Service {
             $this->cliSetProcessTitle('event_worker');
         }
         Log::info($msg, [], $this->logPath);
-
     }
 
     /**
