@@ -6,11 +6,11 @@
  * Time: 下午6:26
  * author :李华 yehong0000@163.com
  */
-namespace lib\Requeue;
+namespace lib\requeue;
 
 use lib\exception\MessageException;
 use lib\message\MessageInterface;
-use lib\Requeue\RequeueInterface;
+use lib\requeue\RequeueInterface;
 class Requeue implements RequeueInterface
 {
     /**
@@ -26,7 +26,7 @@ class Requeue implements RequeueInterface
     private $delay;
 
     /**
-     * Requeue constructor.
+     * requeue constructor.
      *
      * @param int $maxAttempts 一条消息最大排队次数
      * @param int $delay       排队超时时间
