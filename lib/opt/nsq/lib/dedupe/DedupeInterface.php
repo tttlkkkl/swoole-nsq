@@ -6,7 +6,7 @@
  * Time: 下午6:44
  * author :李华 yehong0000@163.com
  */
-namespace lib\dedupe;
+namespace lib\Dedupe;
 use lib\message\MessageInterface;
 interface DedupeInterface
 {

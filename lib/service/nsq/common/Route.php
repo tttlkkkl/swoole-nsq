@@ -11,8 +11,7 @@ namespace lib\service\nsq\common;
 use app\member\Member;
 use lib\framework\log\Log;
 
-class Route
-{
+class Route {
     /**
      * 模块
      * @var
@@ -40,8 +39,7 @@ class Route
      * @return mixed
      * @throws \Exception
      */
-    public static function dispatcher($param)
-    {
+    public static function dispatcher($param) {
         $msg = isset($param['msg']) ? json_decode($param['msg'], true) : [];
         $data = isset($msg['data']) ? $msg['data'] : [];
         $target = isset($msg['target']) ? $msg['target'] : '';
@@ -55,7 +53,7 @@ class Route
             $controller = self::CONTROLLER;
             $action = self::ACTION;
         }
-        $class = 'app' . '\\' . $model . '\\' . $controller;
+        $class = 'app\\module\\' . $model . '\\' . $controller;
         if (class_exists($class) && method_exists($class, $action)) {
             $Object = new $class;
             return call_user_func([$Object, $action], $data);

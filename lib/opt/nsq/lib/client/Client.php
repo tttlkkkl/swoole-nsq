@@ -9,15 +9,15 @@
  */
 namespace lib\client;
 
-use lib\dedupe\Dedupe;
-use lib\dedupe\DedupeInterface;
+use lib\Dedupe\Dedupe;
+use lib\Dedupe\DedupeInterface;
 use lib\handle\Handle;
 use lib\handle\HandleInterface;
 use lib\log\Log;
 use lib\log\LogInterface;
 use lib\message\Message;
-use lib\requeue\Requeue;
-use lib\requeue\RequeueInterface;
+use lib\Requeue\Requeue;
+use lib\Requeue\RequeueInterface;
 use Swoole\Client as SwooleClient;
 use lib\message\Packet;
 use lib\message\Unpack;

@@ -6,11 +6,11 @@
  * Time: 下午6:45
  * author :李华 yehong0000@163.com
  */
-namespace lib\dedupe;
+namespace lib\Dedupe;
 
 use lib\message\MessageInterface;
-use lib\dedupe\DedupeInterface;
-class Dedupe implements DedupeInterface
+
+class Dedupe
 {
     /**
      * 数据存储数组

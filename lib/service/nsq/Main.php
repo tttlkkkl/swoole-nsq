@@ -194,8 +194,7 @@ class Main extends Service implements ServerInterface
      */
     public function onFinish(Server $server, $task_id, $data)
     {
-        print_r($data);
-        echo "任务完成\n";
+        Log::debug('任务完成'.json_encode($data));
     }
 
     /**
