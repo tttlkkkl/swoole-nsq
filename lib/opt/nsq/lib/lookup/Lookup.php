@@ -88,6 +88,7 @@ class Lookup
             );
             curl_setopt_array($ch, $options);
             $resultString = curl_exec($ch);
+            echo $resultString;
             if (!curl_error($ch) && curl_getinfo($ch, CURLINFO_HTTP_CODE) == '200') {
                 $result = json_decode($resultString, TRUE);
                 if(isset($result['data']['producers'])){

@@ -45,14 +45,18 @@ class Service {
     public function serverInit($serverName, ServerInterface $serverCallback) {
         $this->setConfig($serverName);
         $this->serverName = $serverName;
-        $this->server=new \Swoole\Server("127.0.0.1", 9501);
+        $this->server=new Server("127.0.0.1", 9501);
         $this->server = new Server(
             $this->config->get('server.ip') ?: '0.0.0.0',
             $this->config->get('server.port') ?: 9501,
             $this->config->get('server.model') !== null ? $this->config->get('server.model') : SWOOLE_PROCESS,
             $this->config->get('server.socket') !== null ? $this->config->get('server.socket') : SWOOLE_SOCK_ASYNC
         );
-        $this->serverSet();
+        try{
+            $this->serverSet();
+        }catch (\Exception $E){
+            Log::error($E->getMessage());
+        }
         $this->setCallback(1, $this->server, $serverCallback);
     }
 
@@ -71,7 +75,11 @@ class Service {
             $this->config->get('server.ip') ?: '0.0.0.0',
             $this->config->get('server.port') ?: 9501
         );
-        $this->serverSet();
+        try{
+            $this->serverSet();
+        }catch (\Exception $E){
+            Log::error($E->getMessage());
+        }
         $this->setCallback(2, $this->server, $serverCallback);
     }
 
@@ -86,7 +94,11 @@ class Service {
             $this->config->get('server.ip') ?: '0.0.0.0',
             $this->config->get('server.port') ?: 9501
         );
-        $this->serverSet();
+        try{
+            $this->serverSet();
+        }catch (\Exception $E){
+            Log::error($E->getMessage());
+        }
         $this->setCallback(3, $this->server, $serverCallback);
     }
 
@@ -98,6 +110,10 @@ class Service {
     private function serverSet() {
         $serverSet = $this->config->get('set');
         if (is_array($serverSet)) {
+            if (isset($serverSet['daemonize'])) {
+                $this->daemonize = $serverSet['daemonize'];
+                Log::setPrintParam(1);
+            }
             if (isset($serverSet['log_file'])) {
                 $serverSet['log_file'] = LOG_PATH . $serverSet['log_file'];
                 if (!file_exists($serverSet['log_file'])) {
@@ -113,10 +129,6 @@ class Service {
                 } elseif (!is_writeable($serverSet['log_file'])) {
                     throw new ServiceException('swoole日志文件不可写', 8041);
                 }
-            }
-            if (isset($serverSet['daemonize'])) {
-                $this->daemonize = $serverSet['daemonize'];
-                Log::setPrintParam(1);
             }
             $this->server->set($serverSet);
         }

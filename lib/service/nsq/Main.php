@@ -61,9 +61,14 @@ class Main extends Service implements ServerInterface
         }
         $lookupConfig = $this->NsqConfig->get('lookupHost') ?: ($this->NsqConfig->get('lookup.host', true) ?: '127.0.0.1:4161');
         $Lookup = new Lookup($lookupConfig);
-        $nsqdList = $Lookup->lookupHosts($topic);
+        try{
+            $nsqdList = $Lookup->lookupHosts($topic);
+        }catch (\Exception $E){
+            Log::error($E->getMessage());
+        }
         if (!$nsqdList || !isset($nsqdList['lookupHosts']) || !$nsqdList['lookupHosts'] || !is_array($nsqdList['lookupHosts'])) {
-            throw new ServiceException('未发现可用服务', -1);
+            Log::error('未发现可用服务');
+            return false;
         }
         $NsqLog = new NsqLog($this->logPath);
         //重新定义消息去重规则

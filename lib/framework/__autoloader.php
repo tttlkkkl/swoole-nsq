@@ -9,14 +9,17 @@
  *类库自动加载
  *
  */
-function __autoloader($className)
-{
-    $dir = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR . str_replace('\\', '/', $className) . '.php';
-    if(is_file($dir)){
+function __autoLoader($className) {
+    if (strpos($className, 'Illuminate') === 0) {
+        $dir = __DIR__ . DIRECTORY_SEPARATOR . str_replace('\\', '/', $className) . '.php';
+    } else {
+        $dir = dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR . str_replace('\\', '/', $className) . '.php';
+    }
+    if (is_file($dir)) {
         require($dir);
-    }else{
+    } else {
         return false;
     }
 }
 
-spl_autoload_register("__autoloader", true);
+spl_autoload_register("__autoLoader", true);
