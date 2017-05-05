@@ -13,7 +13,7 @@ namespace lib\service\nsq;
 
 
 use lib\framework\db\redis\Redis;
-use lib\Dedupe\DedupeInterface;
+use lib\dedupe\DedupeInterface;
 use lib\message\MessageInterface;
 class Dedupe implements DedupeInterface
 {

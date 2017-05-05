@@ -6,9 +6,9 @@
  * Time: 下午10:48
  * author :李华 yehong0000@163.com
  */
+
 namespace lib\service\nsq\common;
 
-use app\member\Member;
 use lib\framework\log\Log;
 
 class Route {
@@ -59,7 +59,7 @@ class Route {
             return call_user_func([$Object, $action], $data);
         } else {
             $err = '找不到处理程序';
-            Log::critical($err . ':' . json_encode($data));
+            Log::critical($err . ':' . $class . '::' . $action);
             throw new \Exception($err, -1);
         }
     }

@@ -8,10 +8,12 @@
  * @author: lihs
  * @copyright: ec
  */
-
-namespace app\member;
+namespace app\module\member;
 
 
 class Organization {
-
+    public function pull($data){
+        print_r($data);
+        echo '我找到组织了';
+    }
 }

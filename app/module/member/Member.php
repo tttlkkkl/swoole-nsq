@@ -6,7 +6,7 @@
  * Time: 下午7:23
  * author :李华 yehong0000@163.com
  */
-namespace app\member;
+namespace app\module\member;
 class Member
 {
     protected static $Obj;
