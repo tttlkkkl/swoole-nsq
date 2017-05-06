@@ -44,7 +44,7 @@ class Http
         $index = strpos($url, '?');
         if ($index !== false && $params) {
             $url .= '&' . http_build_query($params, '&');
-        } else{
+        } elseif($params){
             $url .= '?' . http_build_query($params, '&');
         }
         return self::execute($url, null, 2, $header);
